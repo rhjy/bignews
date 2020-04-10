@@ -38,6 +38,69 @@
     </div>
   </div>
 
+  <!-- bootstrap中的弹出模态框 -->
+  <div class="modal fade" tabindex="-1" id="myModal" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+              aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">温馨提示</h4>
+        </div>
+        <div class="modal-body">
+          <p>One fine body&hellip;</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">确定</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+
+  <script>
+    $(function () {
+      $('.input_sub').on('click', function (e) {
+        e.preventDefault();
+        //获取用户输入
+        var username = $('.input_txt').val().trim();
+        var password = $('.input_pass').val().trim();
+        //验证账号密码是否为空
+        if (username == '' || password == '') {
+          $('.modal-body>p').text('账号密码不能为空');
+          $('#myModal').modal();
+          return;
+        }
+        //发送ajax请求
+        $.ajax({
+          type: 'post',
+          url: 'http://localhost:8080/api/v1/admin/user/login',
+          data: {
+            username: username,
+            password: password,
+          },
+          success: function (backData) {
+            if (backData.code == 200) {
+              //1.6 如果账号密码没有错误,提示一下登录成功,跳转到首页.
+              //alert('登录成功!');
+              $('.modal-body>p').text('登录成功');
+              $('#myModal').modal();
+              //页面跳转应该放在模态框关闭事件里面. 
+              $('#myModal').on('hide.bs.modal', function () {
+                //把登陆成功后,服务器返回的token令牌保存在本地localStorage
+                localStorage.setItem('token',backData.token);
+                //跳转主页
+                window.location.href = './index.html';
+              })
+            } else {
+              $('.model-body>p').text('账号密码错误');
+              $('#myModel').model();
+            }
+          }
+        })
+      })
+    })
+  </script>
 </body>
 
 </html>
