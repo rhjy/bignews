@@ -120,18 +120,28 @@
 
             });
             //侧边栏样式
-            $('.level01').on('click', function () {
-                $(this).addClass('active').siblings().removeClass('active');
-                if ($('.level01').eq(1).hasClass('active')) {
-                    $('.level02').show().children('li').eq(0).addClass('active').siblings().removeClass('active');
-                }else{
-                    $('.level02').hide();
-                };
-            })
+            // $('.level01').on('click', function () {
+            //     $(this).addClass('active').siblings().removeClass('active');
+            //     if ($('.level01').eq(1).hasClass('active')) {
+            //         $('.level02').show().children('li').eq(0).addClass('active').siblings().removeClass('active');
+            //     }else{
+            //         $('.level02').hide();
+            //     };
+            // })
 
+            $('div.level01').on('click', function () {
+                $(this).addClass('active').siblings('div').removeClass('active');
+                if($(this).index() == 1){
+                    //点击文章管理自动点击第一个li做法1
+                    // $('ul.level02').slideToggle().children().eq(0).toggleClass('active');
+                    //点击文章管理自动点击第一个li做法2
+                    $('ul.level02>li:eq(0)>a')[0].click();
+                    $('ul.level02').slideToggle();
+                    $(this).find('b').toggleClass('rotate0')
+                }
+            });
             $('.level02>li').on('click', function () {
-                $(this).addClass('active').siblings().removeClass('active')
-
+                $(this).addClass('active').siblings('li').removeClass('active')
             })
 
         })
