@@ -44,10 +44,11 @@
                     <label for="inputPassword3" class="col-sm-2 control-label">用户图标：</label>
                     <div class="col-sm-10">
                         <img src="images/2.jpg" alt="" class="user_pic">
-                        <input style="display: block" name="userPic" type="file" id="exampleInputFile">
+                        <input style="display: none" name="userPic" type="file" id="exampleInputFile">
                         <!-- 给label标签的for属性赋值,值是input标签的id,那这样的话点击label就相当于点击了input -->
                         <br>
                         <label for="exampleInputFile">
+                            上传文件
                             <img src="./images/uploads_icon.jpg" style="height: 50px;" alt="">
                         </label>
                     </div>
@@ -70,6 +71,74 @@
     </div>
 </body>
 <script>
+    $(function () {
+        //1.个人信息自动填写
+        $.ajax({
+            type: 'get',
+            url: BigNew.user_detail,
+            success: function (backData) {
+                if (backData.code == 200) {
+                    //做法1
+                    // $('.username').val(backData.data.username);
+                    // $('.nickname').val(backData.data.nickname);
+                    // $('.email').val(backData.data.email);
+                    // $('.password').val(backData.data.password);
+                    // $('.user_pic').attr('src',backData.data.userPic);
+                    //做法2
+                    for (var key in backData.data) {
+                        $('.' + key).val(backData.data[key])
+                    }
+                    $('.user_pic').attr('src', backData.data.userPic);
+                }
+            }
+        });
+        //2.图片预览
+        //给选中的input标签设置change值改变事件
+        $('#exampleInputFile').on('change', function () {
+            var file1 = this.files[0];
+            var url = URL.createObjectURL(file1);
+            $('.user_pic').attr('src', url);
+        });
 
+        //3.个人信息修改(未做个人信息不改动确认)
+        $('.btn-edit').on('click', function (e) {
+
+            e.preventDefault();
+            //获取所有修改后的数据
+            var form1 = document.getElementById('form');
+            var fd = new FormData(form1);
+            $.ajax({
+                type: 'post',
+                url: BigNew.user_edit,
+                data: fd,
+                contentType: false,
+                processData: false,
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        alert('修改个人信息成功!');
+                        //1.刷新主页
+                        //这样整个页面都要刷新,体验不好
+                        //parent.访问父窗口的页面元素
+                        // parent.window.location.reload();
+                        //2.局部刷新
+                        $.ajax({
+                            type: 'get',
+                            url: BigNew.user_info,
+                            success: function (backData) {
+                                if (backData.code == 200) {
+                                    parent.$('.user_info>img').attr('src', backData.data.userPic);
+                                    parent.$('.user_center_link>img').attr('src', backData.data.userPic);
+                                    //用户名 
+                                    parent.$('.user_info>span>i').text(backData.data.nickname);
+                                }
+                            }
+                        })
+
+                    }
+                }
+            })
+        })
+    })
 </script>
+
 </html>
