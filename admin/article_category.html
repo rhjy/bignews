@@ -65,6 +65,8 @@
                 </div>
                 <div class="modal-body">
                     <form>
+                        <!-- 隐藏域 -->
+                        <input type="hidden" name="" id="categoryId">
                         <div class="form-group">
                             <label for="recipient-name" class="control-label">分类名称:</label>
                             <input type="text" class="form-control" id="recipient-name">
@@ -86,12 +88,11 @@
     <script id="category_temp" type="text/html">
         {{each data v}}
         <tr>
-            <td></td>
             <td>{{v.name}}</td>
             <td>{{v.slug}}</td>
             <td class="text-center">
-                <a href="javascript:void(0)" data-toggle="modal" data-target = "#myModal" class=" btn btn-info btn-xs">编辑</a>
-                <a href="javascript:void(0)" data-id= "{{v.id}}" class="btn btn-danger btn-xs">删除</a>
+                <a href="javascript:void(0)" data-id= "{{v.id}}" data-toggle="modal" data-target = "#myModal" class=" btn btn-info btn-xs">编辑</a>
+                <a href="javascript:void(0)" data-id= "{{v.id}}" class="btn btn-danger btn-xs btn-delete">删除</a>
             </td>
         </tr>
         {{/each}}
@@ -100,7 +101,7 @@
         $(function () {
 
             function getData() {
-                //获得用户默认数据
+                //获得用户默认数据,显示在页面中
                 $.ajax({
                     type: 'get',
                     url: BigNew.category_list,
@@ -125,8 +126,17 @@
                     // alert('是编辑弹出的')
                     $('#myModalLabel').text('编辑分类');
                     $('#addOrEditBtn').text('编辑').addClass('btn-primary').removeClass('btn-success');
+
+                    //要把要编辑的数据显示在模态框内
+                    //分类名
+                    $('#recipient-name').val($(e.relatedTarget).parent().prev().prev().text());
+                    //分类别名
+                    $('#message-text').val($(e.relatedTarget).parent().prev().text());
+                    //ID
+                    $('#categoryId').val($(e.relatedTarget).attr('data-id'));
                 }
             });
+            
             //3.给模态框中的新增编辑按钮设置点击事件
             $('#addOrEditBtn').on('click', function () {
                 if ($(this).hasClass('btn-success')) {
@@ -134,6 +144,11 @@
                     // alert('新增');
                     var categoryName = $('#recipient-name').val().trim();
                     var categorySlug = $('#message-text').val().trim();
+                    //非空判断
+                    if (categoryName == '' || categorySlug == '') {
+                        alert('输入不能为空')
+                        return;
+                    }
                     $.ajax({
                         type: 'post',
                         url: BigNew.category_add,
@@ -155,12 +170,78 @@
 
                             }
                         }
-                    })
+                    });
                 } else {
                     //编辑
                     // alert('编辑');
+                    var categoryName = $('#recipient-name').val().trim();
+                    var categorySlug = $('#message-text').val().trim();
+                    var categoryId = $('#categoryId').val().trim();
+                    if (categoryName == '' || categorySlug == '') {
+                        alert('输入值不能为空')
+                        return;
+                    }
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_edit,
+                        data: {
+                            id: categoryId,
+                            name: categoryName,
+                            slug: categorySlug,
+                        },
+                        success: function (backData) {
+                            console.log(backData);
+
+                            if (backData.code == 200) {
+                                alert('修改成功');
+                                //重新获取数据更新到页面
+                                getData();
+                                //隐藏模态框
+                                $('#myModal').modal('hide');
+                                //清空模态框中的输入的内容
+                                $('#recipient-name').val('');
+                                $('#message-text').val('');
+                            } else if (backData.code == 400) {
+                                alert('内容没有修改')
+                                //隐藏模态框
+                                $('#myModal').modal('hide');
+                            }
+                        },
+                    });
+                };
+            });
+            $('tbody').on('click', '.btn-delete', function () {
+                var that = $(this);//把当前点击的这个删除按钮用that保存一下
+                if (confirm('你确定要删除吗?')) {
+                    var categoryId = $(this).attr('data-id');
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_delete,
+                        data: {
+                            id: categoryId,
+                        },
+                        success: function (backData) {
+                            if (backData.code == 204) {
+                                alert(backData.msg);
+                                //第一种方法:直接更新数据
+                                //更新数据
+                                // getData();
+                                //第二种方法:保存点击按钮,删除整一行
+                                that.parent().parent().remove()
+                            }
+                        }
+                    })
                 }
-            })
+            });
+            // 关闭模态框默认清空模态框输入文本
+            $('#myModal').on('hide.bs.modal', function (e) {
+                // 第一种方法
+                //清空模态框中的输入的内容
+                $('#recipient-name').val('');
+                $('#message-text').val('');
+                //第二种方法
+                $('#myModal form')[0].reset();//注意reset()是dom方法
+            });
         })
     </script>
 
