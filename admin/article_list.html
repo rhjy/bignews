@@ -13,6 +13,7 @@
     <script src="./libs/jquery-1.12.4.min.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
+    
 </head>
 
 <body>
@@ -72,6 +73,31 @@
             </div>
         </div>
     </div>
+    <script id="category_temp" type="text/html">
+        <option value="">所有分类</option>
+        {{each data v}}
+        <option value="{{v.id}}">{{v.name}}</option>
+        {{/each}}
+    </script>
+    <script src="./libs/http.js"></script>
+    <script>
+        $(function(){
+            function getData() {
+                //获得用户默认数据,显示在页面中
+                $.ajax({
+                    type: 'get',
+                    url: BigNew.category_list,
+                    success: function (backData) {
+                        if (backData.code == 200) {
+                            var resHtml = template('category_temp', backData)
+                            $('#selCategory').html(resHtml);
+                        }
+                    }
+                });
+            };
+            getData();
+        })
+    </script>
 </body>
 
 </html>
