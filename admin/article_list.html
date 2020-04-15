@@ -69,7 +69,7 @@
                         <td class="text-center">已发布</td>
                         <td class="text-center">
                             <a href="article_edit.html" class="btn btn-default btn-xs">编辑</a>
-                            <a href="javascript:void(0);" class="btn btn-danger btn-xs delete">删除</a>
+                            <a href="javascript:void(0);"  class="btn btn-danger btn-xs delete">删除</a>
                         </td>
                     </tr>
                 </tbody>
@@ -99,8 +99,8 @@
             <td class="text-center">{{v.date}}</td>
             <td class="text-center">{{v.state}}</td>
             <td class="text-center">
-                <a href="article_edit.html" id = "{{v.id}}" class="btn btn-default btn-xs">编辑</a>
-                <a href="javascript:void(0);" id = "{{v.id}}" class="btn btn-danger btn-xs delete">删除</a>
+                <a href="article_edit.html?data-id = {{v.id}}"  class="btn btn-default btn-xs">编辑</a>
+                <a href="javascript:void(0);" data-id = "{{v.id}}" class="btn btn-danger btn-xs delete">删除</a>
             </td>
         </tr>
         {{/each}}
@@ -120,7 +120,8 @@
                     }
                 }
             });
-
+            // 设置一个变量保存当前页
+            var currentPage = 1;
             //原来版本
             // //二.文章列表
             // //发送ajax请求,获得默认的文章类别/文章状态的所有文章,显示在页面中
@@ -215,7 +216,7 @@
                         type: $('#selCategory').val(),//文章类别,默认是所以类型
                         state: $('#selStatus').val(),//文章状态,默认是所以类型
                         page: myPage,//页码每次调用不同,不能写死
-                        perpage: 6,
+                        perpage: 3,
                     },
                     success: function (backData) {
                         if (backData.code == 200) {
@@ -229,8 +230,15 @@
                             if (backData.data.data.length != 0 && callback != null) {
                                 $('#pagination').show().next('p').hide();//有数据显示页码
                                 callback(backData);//在调用回调参数时,把获取回来的数据作为实参传递
-                            }else if(backData.data.data.length == 0) {
+                            }
+                            else if (currentPage == 1 && backData.data.data.length == 0) {
+                                //当前页是1,而且没有数据,说明文章分类没有文章
                                 $('#pagination').hide().next('p').show();//没有有数据不显示页码
+                            }
+                            else if (backData.data.totalPage == currentPage - 1 && backData.data.data.length == 0) {
+                                //判断返回的数据中总页数是否是当前页-1(代表当前页没有了)而且没有文章返回
+                                currentPage -= 1;
+                                $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage, currentPage);
                             }
 
                         };
@@ -250,6 +258,8 @@
                     last: '尾页',
                     // 页码点击的回调函数
                     onPageClick: function (event, page) {
+                        // 保存当前页码
+                        currentPage = page;
                         // 点击对应的页码数,重新发送ajax请求,获得页面数据
                         getData(page, null)
 
@@ -260,6 +270,9 @@
             $('#btnSearch').on('click', function (e) {
                 //消除按钮默认提交效果
                 e.preventDefault();
+                //筛选时要把当前页currentPage改为1
+                currentPage = 1;
+
                 // ,发送ajax请求,获得页面数据重新显示页面
                 getData(1, function (backData) {
                     // 筛选后调用分页插件中的changeTotalPages方法刷新页码
@@ -271,6 +284,37 @@
 
             });
 
+            //删除按钮
+            // 委托注册
+            $('tbody').on('click', '.delete', function () {
+                if (confirm('你确定要删除么?')) {
+                    //获得当前点击删除的按钮的自定义属性
+                    var articleId = $(this).attr('data-id');
+
+                    //发送ajax请求
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.article_delete,
+                        data: {
+                            id: articleId,
+                        },
+                        success: function (backData) {
+                            console.log(backData);
+                            if (backData.code == 204) {
+                                //刷新当前页,但是要跳回当前页而不是第一页
+                                //由于删除了数据,总页码有可能减少.那就应该根据新的总页码重新生成分页结构
+                                getData(currentPage, function (backData) {
+                                    // 筛选后调用分页插件中的changeTotalPages方法刷新页码
+                                    // 参数1.方法
+                                    // 参数2.页码数据
+                                    // 参数3.默认显示页面页码
+                                    $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage, currentPage);
+                                })
+                            }
+                        }
+                    })
+                }
+            })
 
 
         })
