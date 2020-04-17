@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>文章列表</title>
+    <title>发表文章</title>
     <link rel="stylesheet" href="./libs/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/iconfont.css">
@@ -14,32 +14,49 @@
     <script src="./libs/jquery-1.12.4.min.js"></script>
     <!-- 模板引擎 -->
     <script src="./libs/template-web.js"></script>
+    <!-- 全局html文件 -->
+    <script src="./libs/http.js"></script>
+    <!-- 文章类别模板 -->
+    <script id="category_temp" type="text/html">
+        {{each data v}}
+        <option value="{{v.id}}">{{v.name}}</option>
+        {{/each}}
+    </script>
+    <!-- 引入日期插件css -->
+    <link rel="stylesheet" href="./libs/jedate/css/jeDate-test.css">
+    <link rel="stylesheet" href="./libs/jedate/css/jeDate.css">
+    <!-- 引入日期插件js -->
+    <script src="./libs/jedate/js/jedate.js"></script>
+    <!-- 引入富文本js -->
+    <script src="./libs/wangEditor.js"></script>
 </head>
 
 <body>
     <div class="container-fluid">
         <div class="common_title">
-            文章编辑
+            发表文章
         </div>
         <div class="container-fluid common_con">
             <form class="form-horizontal article_form" id="form">
                 <div class="form-group">
                     <label for="inputTitle" class="col-sm-2 control-label">文章标题：</label>
                     <div class="col-sm-10">
-                        <input type="text" name="title" class="form-control title" id="inputTitle" value="文章标题文字">
+                        <input type="text" name="title" class="form-control title" id="inputTitle" placeholder="文章标题文字">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputCover" class="col-sm-2 control-label">文章封面：</label>
                     <div class="col-sm-10">
-                        <img src="images/pic06.jpg" class="article_cover">
-                        <input name="cover" type="file" id="inputCover">
+                        <label for="inputCover">
+                            <img src="images/pic06.jpg" class="article_cover">
+                        </label>
+                        <input  name="cover" type="file" id="inputCover">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputCategory" class="col-sm-2 control-label">文章类别：</label>
                     <div class="col-sm-4">
-                        <select class="form-control category" name="categoryId">
+                        <select class="form-control category" name="categoryId" id="selCategory">
                             <option>类别一</option>
                             <option>类别二</option>
                             <option>类别三</option>
@@ -50,12 +67,18 @@
                 </div>
                 <div class="form-group">
                     <label class="col-sm-2 control-label">发布时间：</label>
-                    <div class="col-sm-4">
+                    <!-- 日期插件 -->
+                    <div class="jeinpbox col-sm-4">
+                        <input type="text" name="date" class="jeinput" id="testico" placeholder="YYYY-MM-DD">
+                        <div class="icons jebtns"
+                            onclick="jeDate('#testico',{trigger:false,format: 'YYYY-MM-DD',zIndex:20999})"></div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputEmail3" class="col-sm-2 control-label">文章内容：</label>
-                    <div class="col-sm-10">
+                    <!-- 富文本编辑器 -->
+                    <div class="col-sm-8" id="editor" >
+                        <!-- <p>请输入您要发布的正文</p> -->
                     </div>
                 </div>
                 <div class="form-group">
@@ -67,6 +90,100 @@
             </form>
         </div>
     </div>
+    <script>
+        //一.文章封面预览
+        $('#inputCover').on('change', function () {
+            var file1 = this.files[0];
+            var url1 = URL.createObjectURL(file1);
+            $('.article_cover').attr('src', url1);
+        })
+        //二 .发送ajax请求获得用所有文章类别,显示在下拉菜单中
+        $.ajax({
+            type: 'get',
+            url: BigNew.category_list,
+            success: function (backData) {
+                if (backData.code == 200) {
+                    var resHtml = template('category_temp', backData)
+                    $('#selCategory').html(resHtml);
+                }
+            }
+        });
+
+        //三.日期插件
+        jeDate("#testico", {
+            format: "YYYY-MM-DD",
+            zIndex:20999,//提高日期插件层级
+            isinitVal:true,
+            isTime: false,
+            minDate: "2014-09-19 00:00:00",
+            // theme: { bgcolor: "#00A680", pnColor: "#00DDAA" },
+            
+        });
+        //四.富文本插件
+        var E = window.wangEditor;
+        var editor = new E('#editor');
+        editor.create();
+        //发布
+        $('.btn-release').on('click',function(e){
+            //清除按钮默认提交事件
+            e.preventDefault();
+            //用formData获得用户数据
+            var fd = new FormData(document.querySelector('form'));
+            // console.log(editor.txt.html());
+            //富文本框不能直接用FormData获取数据,所以要追加
+            fd.append('content',editor.txt.html());
+            fd.append('state','已发布');
+            //发送ajax请求
+            $.ajax({
+                type:'post',
+                url:BigNew.article_publish,
+                data:fd,
+                contentType:false,
+                processData:false,
+                success:function(backData){
+                    if(backData.code == 200){
+                        alert('发布成功!');
+                        
+                        //点击第一个子标签
+                        parent.$('ul.level02>li:eq(0)').click();
+                        //跳转到列表页
+                        window.location.href = './article_list.html';
+                    }
+                    
+                }
+            })
+        });
+        //存为草稿
+        $('.btn-draft').on('click',function(e){
+            //清除按钮默认提交事件
+            e.preventDefault();
+            //用formData获得用户数据
+            var fd = new FormData(document.querySelector('form'));
+            // console.log(editor.txt.html());
+            //富文本框不能直接用FormData获取数据,所以要追加
+            fd.append('content',editor.txt.html());
+            fd.append('state','');
+            //发送ajax请求
+            $.ajax({
+                type:'post',
+                url:BigNew.article_publish,
+                data:fd,
+                contentType:false,
+                processData:false,
+                success:function(backData){
+                    if(backData.code == 200){
+                        alert('保存草稿成功!');
+                        
+                        //点击第一个子标签
+                        parent.$('ul.level02>li:eq(0)').click();
+                        //跳转到列表页
+                        window.location.href = './article_list.html';
+                    }
+                    
+                }
+            })
+        })
+    </script>
 </body>
 
 </html>

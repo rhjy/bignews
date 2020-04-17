@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>文章列表</title>
+    <title>文章编辑</title>
     <link rel="stylesheet" href="./libs/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/iconfont.css">
@@ -14,6 +14,20 @@
     <script src="./libs/jquery-1.12.4.min.js"></script>
     <!-- 模板引擎 -->
     <script src="./libs/template-web.js"></script>
+    <!-- 全局html文件 -->
+    <script src="./libs/http.js"></script>
+    <!-- 文章类别模板 -->
+    <script id="category_temp" type="text/html">
+        {{each data v}}
+        <option value="{{v.id}}">{{v.name}}</option>
+        {{/each}}
+    </script>
+    <!-- 引入日历插件需要文件 -->
+    <link rel="stylesheet" href="./libs/jedate/css/jedate.css">
+    <link rel="stylesheet" href="./libs/jedate/css/jeDate-test.css">
+    <script src="./libs/jedate/js/jedate.js"></script>
+    <!-- 引入富文本所需文件 -->
+    <script src="./libs/wangEditor.js"></script>
 </head>
 
 <body>
@@ -39,7 +53,7 @@
                 <div class="form-group">
                     <label for="inputCategory" class="col-sm-2 control-label">文章类别：</label>
                     <div class="col-sm-4">
-                        <select class="form-control category" name="categoryId">
+                        <select class="form-control category" name="categoryId" id="selCategory">
                             <option>类别一</option>
                             <option>类别二</option>
                             <option>类别三</option>
@@ -50,12 +64,18 @@
                 </div>
                 <div class="form-group">
                     <label class="col-sm-2 control-label">发布时间：</label>
-                    <div class="col-sm-4">
+                    <!-- 日期插件 -->
+                    <div class="jeinpbox col-sm-4">
+                        <input type="text" name="date" class="jeinput" id="testico" placeholder="YYYY-MM-DD">
+                        <div class="icons jebtns"
+                            onclick="jeDate('#testico',{trigger:false,format: 'YYYY-MM-DD',zIndex:20999})"></div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputEmail3" class="col-sm-2 control-label">文章内容：</label>
-                    <div class="col-sm-10">
+                    <!-- 富文本编辑器 -->
+                    <div class="col-sm-8" id="editor">
+                        <!-- <p>请输入您要发布的正文</p> -->
                     </div>
                 </div>
                 <div class="form-group">
@@ -67,6 +87,43 @@
             </form>
         </div>
     </div>
+    <script>
+        $(function () {
+            //1.文章封面预览
+            $('#inputCover').on('change', function () {
+                var file1 = this.files[0];
+                var url1 = URL.createObjectURL(file1);
+                $('.article_cover').attr("src", url1)
+            });
+            // 2.文章类别下拉菜单
+            $.ajax({
+                type: 'get',
+                url: BigNew.category_list,
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        var resHtml = template('category_temp', backData);
+                        $('#selCategory').html(resHtml);
+                    }
+
+                }
+            });
+            //3.日期插件,引入日期插件文件,结构代码,js代码,并提升显示层级
+            jeDate("#testico", {
+                format: "YYYY-MM-DD",
+                zIndex: 20999,//提高日期插件层级
+                isinitVal: true,
+                isTime: false,
+                minDate: "2014-09-19 00:00:00",
+            });
+            //3.富文本,引入富文本js,结构代码,js代码,
+            // 富文本js代码
+            var E = window.wangEditor;
+            var editor = new E('#editor');
+            editor.create();
+            //4.获取文章id,然后发送ajax请求获取对应文章数据显示在对应位置
+            
+        })
+    </script>
 </body>
 
 </html>
